@@ -1,0 +1,203 @@
+// Prisma schema for Student Lost and Found System
+// Strict MySQL Provider
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  STAFF
+  SECURITY_OFFICER
+  CUSTODIAN
+  ADMIN
+  AUDITOR
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum ItemStatus {
+  REGISTERED
+  STORED
+  CLAIM_PENDING
+  RETURNED
+  AUCTIONED
+  DONATED
+  DISPOSED
+}
+
+enum LostReportStatus {
+  OPEN
+  POTENTIAL_MATCH
+  RESOLVED
+  CANCELLED
+}
+
+enum ClaimStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id               String       @id @default(uuid())
+  studentStaffId   String       @unique @map("student_staff_id")
+  firstName        String       @map("first_name")
+  lastName         String       @map("last_name")
+  email            String       @unique
+  passwordHash     String       @map("password_hash")
+  role             Role         @default(STUDENT)
+  status           UserStatus   @default(ACTIVE)
+  phoneNumber      String?      @map("phone_number")
+  department       String?
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  // Relationships
+  foundItemsLogged FoundItem[]  @relation("LoggedBy")
+  lostReports      LostReport[]
+  claims           Claim[]      @relation("Claimant")
+  claimsReviewed   Claim[]      @relation("ReviewedBy")
+  witnessedClaims  Claim[]      @relation("WitnessedBy")
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model Category {
+  id                  Int          @id @default(autoincrement())
+  name                String       @unique
+  description         String?
+  isHighValue         Boolean      @default(false) @map("is_high_value")
+  retentionPeriodDays Int          @default(90) @map("retention_period_days")
+  foundItems          FoundItem[]
+  lostReports         LostReport[]
+
+  @@map("categories")
+}
+
+model StorageLocation {
+  id              Int         @id @default(autoincrement())
+  campusBuilding  String      @map("campus_building")
+  roomOrLocker    String      @map("room_or_locker")
+  binNumber       String?     @map("bin_number")
+  isSecureVault   Boolean     @default(false) @map("is_secure_vault")
+  notes           String?
+  foundItems      FoundItem[]
+
+  @@map("storage_locations")
+}
+
+model FoundItem {
+  id                         String           @id @default(uuid())
+  itemCode                   String           @unique @map("item_code") // e.g. LF-2026-0001
+  title                      String
+  categoryId                 Int              @map("category_id")
+  category                   Category         @relation(fields: [categoryId], references: [id])
+  publicDescription          String           @db.Text @map("public_description")
+  privateVerificationDetails String           @db.Text @map("private_verification_details") // Confidential proof key
+  primaryColor               String?          @map("primary_color")
+  brand                      String?
+  locationFound              String           @map("location_found")
+  dateFound                  DateTime         @map("date_found")
+  storageLocationId          Int              @map("storage_location_id")
+  storageLocation            StorageLocation  @relation(fields: [storageLocationId], references: [id])
+  status                     ItemStatus       @default(STORED)
+  loggedByUserId             String           @map("logged_by_user_id")
+  loggedBy                   User             @relation("LoggedBy", fields: [loggedByUserId], references: [id])
+  createdAt                  DateTime         @default(now()) @map("created_at")
+  updatedAt                  DateTime         @updatedAt @map("updated_at")
+
+  images                     ItemImage[]
+  claims                     Claim[]
+
+  @@index([status, dateFound])
+  @@map("found_items")
+}
+
+model ItemImage {
+  id          String    @id @default(uuid())
+  foundItemId String    @map("found_item_id")
+  foundItem   FoundItem @relation(fields: [foundItemId], references: [id], onDelete: Cascade)
+  imageUrl    String    @map("image_url") @db.VarChar(1000)
+  isPublic    Boolean   @default(true) @map("is_public")
+  uploadedAt  DateTime  @default(now()) @map("uploaded_at")
+
+  @@map("item_images")
+}
+
+model LostReport {
+  id              String           @id @default(uuid())
+  reportCode      String           @unique @map("report_code") // e.g. LR-2026-0001
+  title           String
+  categoryId      Int              @map("category_id")
+  category        Category         @relation(fields: [categoryId], references: [id])
+  description     String           @db.Text
+  identifyingMark String?          @db.Text @map("identifying_mark")
+  brand           String?
+  primaryColor    String?          @map("primary_color")
+  locationLost    String?          @map("location_lost")
+  dateLost        DateTime         @map("date_lost")
+  status          LostReportStatus @default(OPEN)
+  reportedByUserId String          @map("reported_by_user_id")
+  reportedBy      User             @relation(fields: [reportedByUserId], references: [id])
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@map("lost_reports")
+}
+
+model Claim {
+  id                        String      @id @default(uuid())
+  claimCode                 String      @unique @map("claim_code") // e.g. CLM-2026-0001
+  foundItemId               String      @map("found_item_id")
+  foundItem                 FoundItem   @relation(fields: [foundItemId], references: [id])
+  claimantId                String      @map("claimant_id")
+  claimant                  User        @relation("Claimant", fields: [claimantId], references: [id])
+  proofDescription          String      @db.Text @map("proof_description")
+  identifyingMarksProvided  String      @db.Text @map("identifying_marks_provided")
+  status                    ClaimStatus @default(SUBMITTED)
+  reviewedByUserId          String?     @map("reviewed_by_user_id")
+  reviewedBy                User?       @relation("ReviewedBy", fields: [reviewedByUserId], references: [id])
+  rejectionReason           String?     @db.Text @map("rejection_reason")
+  reviewNotes               String?     @db.Text @map("review_notes")
+  handoverTimestamp         DateTime?   @map("handover_timestamp")
+  handoverWitnessId         String?     @map("handover_witness_id")
+  handoverWitness           User?       @relation("WitnessedBy", fields: [handoverWitnessId], references: [id])
+  claimantSignatureRef      String?     @map("claimant_signature_ref") @db.VarChar(1000)
+  createdAt                 DateTime    @default(now()) @map("created_at")
+  updatedAt                 DateTime    @updatedAt @map("updated_at")
+
+  @@index([claimantId, status])
+  @@map("claims")
+}
+
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  entityType String   @map("entity_type") // FOUND_ITEM, CLAIM, USER, STORAGE
+  entityId   String   @map("entity_id")
+  action     String   // CREATE, UPDATE, STATUS_CHANGE, CLAIM_VERIFY, HANDOVER, DISPOSAL
+  actorId    String   @map("actor_id")
+  actor      User     @relation(fields: [actorId], references: [id])
+  actorIp    String   @default("127.0.0.1") @map("actor_ip")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@map("audit_logs")
+}

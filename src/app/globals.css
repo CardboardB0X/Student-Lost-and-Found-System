@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --fluent-bg: #F5F5F5;
+  --fluent-card-bg: #FFFFFF;
+  --fluent-brand: #0F6CBD;
+  --fluent-brand-hover: #115EA3;
+  --fluent-brand-bg: #EBF3FC;
+  --fluent-stroke: #E0E0E0;
+  --fluent-text-primary: #242424;
+  --fluent-text-secondary: #616161;
+}
+
+.dark {
+  --fluent-bg: #1A1A1A;
+  --fluent-card-bg: #242424;
+  --fluent-brand: #2886DE;
+  --fluent-brand-hover: #479EF5;
+  --fluent-brand-bg: #1B2A3D;
+  --fluent-stroke: #333333;
+  --fluent-text-primary: #F0F0F0;
+  --fluent-text-secondary: #A0A0A0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--fluent-bg);
+  color: var(--fluent-text-primary);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.dark body {
+  background-color: #181818;
+  color: #F3F3F3;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C7C7C7;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #444444;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8A8A8A;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #666666;
+}
+
+/* Fluent Card elevation */
+.fluent-card {
+  background: #FFFFFF;
+  border: 1px solid #EDEBE9;
+  border-radius: 8px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.04), 0px 0px 2px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.dark .fluent-card {
+  background: #242424;
+  border: 1px solid #333333;
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.fluent-card:hover {
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.08), 0px 0px 2px rgba(0, 0, 0, 0.06);
+  border-color: #D1D1D1;
+}
+
+.dark .fluent-card:hover {
+  border-color: #4A4A4A;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5);
+}

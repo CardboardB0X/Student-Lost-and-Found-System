@@ -1,0 +1,7 @@
+node_modules
+/.next
+/prisma
+/src
+.git
+.env*
+server/.env
